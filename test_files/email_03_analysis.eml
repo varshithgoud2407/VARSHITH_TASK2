@@ -1,0 +1,28 @@
+From: James Chen <j.chen@stockedfoods.com>
+To: Sarah Mitchell <s.mitchell@researchpartners.co.uk>
+Date: Tue, 12 Sep 2023 11:30:00 +0100
+Subject: Re: Phase 1 Analysis — Competition & Spend Questions
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+
+Sarah,
+
+Looking at the competition table — a few clarifications needed for the board deck.
+
+1. The preference scores (e.g. total_sample_preference_avg): these are the 0-10 ratings per meal category, correct? So Pizza (delivered) at 7.17 means the average respondent rates delivered pizza 7.17/10 in preference?
+
+2. What exactly does "share of wallet" mean here? I see buy_regularly_share_of_wallet_share at 0.12 — is that 12% of their total food spend goes to this category?
+
+3. The competition data has 19 rows. Each row is a meal type (attribute column): Frozen Ready Meals, Pizza (delivered), Asian food (delivered), Recipe boxes, etc. I notice Gousto appears in the brand data — that's the UK meal kit company, right? And Birds Eye is the frozen food brand with fish fingers etc.?
+
+4. For the triggers table: the _need_share columns (e.g. total_sample_need_share) — this is "% of respondents who rated this need as important"? And _stocked_performance_share is "% who think Stocked delivers on this need"?
+
+5. McCain shows up in the brand data. Just confirming — this is the Canadian frozen potato company, major competitor in UK frozen foods?
+
+6. What does marketing_dimension represent in the barriers table? Is this the type of marketing activity being evaluated?
+
+Also — evaluation_stage in the barriers data: is this the funnel stage (awareness → consideration → trial → retention)?
+
+Let me know, I need this locked down before the October workshop.
+
+James

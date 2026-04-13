@@ -1,0 +1,33 @@
+From: Laura Becker <l.becker@researchpartners.co.uk>
+To: Sarah Mitchell <s.mitchell@researchpartners.co.uk>
+Cc: James Chen <j.chen@stockedfoods.com>
+Date: Fri, 18 Aug 2023 16:42:00 +0100
+Subject: Re: Fieldwork Complete — Key Variable Notes
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+
+Hi both,
+
+Fieldwork closed yesterday. 1,070 completes, clean data file exported this morning.
+
+A few notes on variables that came up during QA:
+
+1. cooking_enjoyment: measured on a 5-point scale from 1 ("dislikes cooking") to 5 ("always_cook_from_scratch"). Distribution is roughly normal, peak at 3 ("cooks when convenient").
+
+2. frm_brand_awareness: binary (yes/no) per brand. Captures aided awareness — "Have you heard of [brand]?" Shows recall after being shown the brand name, not spontaneous.
+
+3. frm_brand_consideration: also binary. "Would you consider buying [brand]?" — strictly post-awareness filter.
+
+4. N_Home_Cooking_per_week: integer, self-reported. Range 0-14. Median is 4.
+
+5. The channel variable captures where respondents last purchased frozen ready meals. Top channels: Tesco (28%), Sainsbury's (19%), Asda (14%), frozen_food_specialist_eg_farmfoods (8%).
+
+6. Gender split: 51% female, 49% male. Age distribution peaks at 35-44 (23%) and 45-54 (22%).
+
+7. Income brackets run from below_20000 up to 150000_or_more. The 80000_to_149999 bracket has 28% of respondents — largest single bracket.
+
+One issue: 12 respondents had missing data on annual_hh_income. We coded them as "prefer_not_to_answer" rather than dropping. This affects sample_base for income-filtered queries.
+
+Data file is on the shared drive. Let me know if you need anything re-cut.
+
+Laura

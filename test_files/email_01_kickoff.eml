@@ -1,0 +1,36 @@
+From: Sarah Mitchell <s.mitchell@researchpartners.co.uk>
+To: James Chen <j.chen@stockedfoods.com>
+Cc: Laura Becker <l.becker@researchpartners.co.uk>
+Date: Mon, 10 Jul 2023 09:15:00 +0100
+Subject: Consumer Study — Kick-off Summary & Variable Codebook
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+
+Hi James,
+
+Great kick-off on Friday. Summarising key decisions for the record.
+
+SAMPLE: n=1,070 respondents, nationally representative UK sample. Fieldwork August 2023.
+
+SEGMENTATION (core variable: purchase intent after concept exposure):
+- probable_trialists: respondents who "would definitely" or "would probably" buy Stocked
+- non_probable: would not buy
+- buy_regularly: already buy frozen ready meals regularly
+- buy_occasionally: occasional buyers
+- try_once: would try once but not commit
+
+INDEX CONVENTION: An index of 100 = total sample average. Above 100 = over-indexing. For example, probable_trialists_spend_index of 151.77 means probable trialists spend 51.77% more than average.
+
+VARIABLE NAMING: {segment}_{metric}_{measure}. Examples:
+- probable_trialists_spend_avg = average monthly GBP spend among probable trialists
+- buy_regularly_share_of_wallet_share = share of wallet for regular buyers
+- total_sample_preference_sample_size = sample size for preference in total sample
+
+RTE = ready-to-eat. Variable rte_categories_bought_in_p1m tracks which RTE categories were purchased in the past month.
+
+Questionnaire covers: demographics, category behaviour, cooking habits, needs assessment (45+ items), concept evaluation, and competition (19 meal categories rated 0-10).
+
+Draft questionnaire by Wednesday.
+
+Best,
+Sarah

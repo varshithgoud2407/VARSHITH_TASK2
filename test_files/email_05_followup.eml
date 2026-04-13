@@ -1,0 +1,38 @@
+From: James Chen <j.chen@stockedfoods.com>
+To: Sarah Mitchell <s.mitchell@researchpartners.co.uk>
+Cc: Laura Becker <l.becker@researchpartners.co.uk>
+Date: Thu, 30 Nov 2023 14:20:00 +0000
+Subject: Re: Pre-Workshop Data Checks — Segment Sizes & Spend
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+
+Sarah,
+
+Final checks before the December workshop. Can you confirm these numbers?
+
+SEGMENT SIZES (from probable_trialists_n, buy_regularly_n, etc.):
+- Probable trialists: n=205 (19% of total)
+- Non-probable: n=865 (81%)
+- Buy regularly: n=203 (among probable trialists)
+- Buy occasionally: n=466
+- Try once: n=379
+
+SPEND DATA (buy_regularly_spend_avg etc.):
+- Regular buyers: GBP 20.81/month average (index 155.35)
+- Probable trialists: GBP 20.33/month (index 151.77)
+- Occasional: GBP 12.95/month (index 96.69)
+- Non-probable: GBP 12.04/month (index 89.9)
+- Try once: GBP 10.19/month (index 76.11)
+
+So committed segments spend roughly 2x the less engaged ones.
+
+CHILDREN: the children_in_hh variable has categories: no_children, one_child, two_children, three_plus_children. Can you check if households with children over-index on frozen ready meal purchases?
+
+HOUSING: living_area splits into urban_eg_builtup_large_towns_and_cities, suburban, and rural. We need this for the distribution strategy slide.
+
+Also — for the "late-night cravings" variable (latenight_cravings / late-night_cravings): is this a consumption occasion or a need item? I see it in both the triggers table and the customer profile.
+
+One last thing: the student segment (employment_status = student) — what's the sample size? I want to make sure we're not over-reading a thin cell.
+
+Thanks,
+James

@@ -1,0 +1,30 @@
+From: Sarah Mitchell <s.mitchell@researchpartners.co.uk>
+To: James Chen <j.chen@stockedfoods.com>
+Date: Wed, 13 Sep 2023 08:55:00 +0100
+Subject: Re: Phase 1 Analysis — Competition & Spend Questions
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+
+James,
+
+Answers inline:
+
+1. Correct. preference_avg is the mean of 0-10 ratings across all respondents in that segment. So total_sample_preference_avg = 7.17 for Pizza (delivered) means the average across all 1,070 respondents.
+
+2. Share of wallet = proportion of total Convenience Food spending allocated to a specific category. buy_regularly_share_of_wallet_share = 0.12 means regular buyers spend 12% of their convenience food budget on frozen ready meals. The _index version (buy_regularly_share_of_wallet_index) compares this to total sample: 100 = same as average.
+
+3. Yes to both. Gousto is the UK meal kit delivery company — fresh ingredients, recipe cards. Birds Eye is the British frozen food brand (fish fingers, peas, ready meals). Both are key competitors in the "alternatives to cooking from scratch" space.
+
+4. Exactly right. total_sample_need_share = "% who rate this need as important (4 or 5 on 5-point scale)". And total_sample_stocked_performance_share = "% who agree Stocked delivers on this need". The gap between need_share and stocked_performance_share is the opportunity gap.
+
+5. McCain = Canadian company, UK market leader in frozen potato products. In our data they appear as a benchmark brand in the frozen aisle.
+
+6. marketing_dimension = the category of marketing tactic being evaluated (e.g. "packaging", "in-store display", "social media", "price promotion"). marketing_value = the specific tactic within that dimension. marketing_type further classifies whether it's a "barrier" or "driver".
+
+7. evaluation_stage = yes, the customer journey stage. Values are: "awareness", "consideration", "trial", "repeat_purchase", "loyalty". Each row in the barriers table is one combination of evaluation_stage x marketing_dimension x marketing_value.
+
+One more thing — the variable Appealing Texture in triggers refers to a specific need item: consumers who want their frozen meals to have good texture (not soggy, not rubbery). Similarly, meal_at_work captures the occasion "eating at work during lunch or breaks" — it's a consumption moment, not a channel.
+
+The variable tiktok in the media section simply flags whether the respondent uses TikTok as a social media platform.
+
+Sarah

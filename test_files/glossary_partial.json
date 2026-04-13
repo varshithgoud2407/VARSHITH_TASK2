@@ -1,0 +1,971 @@
+{
+  "SHEET_DEFINITIONS": {
+    "customer profile": {
+      "definition": "Sociodemographics, household structure, media usage, purchasing behavior, brand perceptions, cooking habits, and trial/retention differentiation across customer segments. Contains demographic dimensions: gender, agegroups, annual_hh_income, employment_status, marital_status, children_in_hh, region, education_level, living_area. Segmented by purchase intent: probable trialists, non-probable, buy regularly, buy occasionally, try once.",
+      "use_for": [
+        "consumer profiling",
+        "demographic segmentation",
+        "target group analysis",
+        "brand awareness by demographics",
+        "purchase intent segmentation",
+        "cooking habits and media behavior"
+      ]
+    },
+    "spend": {
+      "definition": "Monthly spending levels (£) and share-of-wallet allocation across meal and convenience categories (sandwiches, pizza, fast food delivered/eaten out, frozen/chilled ready meals, meal kits, etc.), segmented by purchase intent. Shows average spend per category and what % of total food budget each category represents, indexed to total sample baseline.",
+      "use_for": [
+        "spending analysis",
+        "share-of-wallet calculation",
+        "category spend comparison",
+        "budget allocation across meal solutions",
+        "purchase intent spend patterns",
+        "category index analysis",
+        "spending patterns",
+        "food spend",
+        "wallet share",
+        "monthly spend",
+        "how much do people spend",
+        "frozen meals spend",
+        "category spending"
+      ]
+    },
+    "competition": {
+      "definition": "Preference ratings (average scores) for competing meal solutions across purchase intent segments (probable trialists, non-probable, buy regularly, buy occasionally, try once). Measures how favorably each category (frozen/chilled ready meals, pizza, fast food delivery, sandwiches, meal kits, etc.) is viewed relative to alternatives, indexed to total sample baseline.",
+      "use_for": [
+        "competitive analysis",
+        "category preference comparison",
+        "competitive positioning",
+        "preference scores by segment",
+        "alternative meal solution appeal",
+        "index-based competitive benchmarking",
+        "competitive landscape",
+        "meal preferences",
+        "frozen meal competitors"
+      ]
+    },
+    "triggers for purchase": {
+      "definition": "Dual measurement of (1) need importance (what % rate as important) and (2) perceived STOCKED performance (what % rate STOCKED highly on this attribute) for key purchase drivers such as packaging waste, food waste, organic ingredients, taste, convenience, health, flexibility, sustainability. Shows what matters most to customers and how well STOCKED delivers on those needs, segmented by purchase intent and indexed to baseline.",
+      "use_for": [
+        "purchase motivation analysis",
+        "needs vs. performance gap analysis",
+        "attribute importance ranking",
+        "STOCKED performance evaluation",
+        "functional and emotional driver identification",
+        "segment-specific trigger analysis"
+      ]
+    },
+    "main barriers and retention": {
+      "definition": "Marketing barriers and retention metrics across the customer evaluation journey, tracking barriers and drivers at different stages (need evaluation, brand consideration, purchase decision, retention) by purchase intent segments (probable trialists, non-probable, buy regularly, buy occasionally). Shows what prevents/enables customer acquisition and retention, indexed to baseline.",
+      "use_for": [
+        "barrier identification",
+        "retention factor analysis",
+        "evaluation stage funnel analysis",
+        "objection handling insights",
+        "marketing optimization by stage",
+        "segment-specific barrier/driver analysis"
+      ]
+    }
+  },
+  "V": {
+    "attribute_type": {
+      "definition": "Top-level classification dimension. It defines the context in which segmentation or filtering occurs.",
+      "type": "dimension",
+      "table": 0
+    },
+    "FRM Channels P1M (among buyers)": {
+      "definition": "Channels or purchase locations used by buyers to purchase frozen ready meals in the past month.",
+      "type": "dimension",
+      "table": 0
+    },
+    "Stocked Concept: Consumption days": {
+      "definition": "Indicates on which days consumers typically eat or use Stocked products (e.g., weekdays, weekends, both).",
+      "type": "dimension",
+      "table": 0
+    },
+    "agegroups": {
+      "definition": "agegroups",
+      "type": "dimension",
+      "table": 0
+    },
+    "education_level": {
+      "definition": "education level",
+      "type": "dimension",
+      "table": 0
+    },
+    "frm_brand_awareness": {
+      "definition": "Indicates whether respondents recognize or recall the brand when prompted (aided awareness).",
+      "type": "dimension",
+      "table": 0
+    },
+    "frm_brand_consideration": {
+      "definition": "Indicates whether respondents would consider purchasing the brand in the future (brand consideration stage).",
+      "type": "dimension",
+      "table": 0
+    },
+    "frm_brand_purchase_p1m": {
+      "definition": "Indicates whether respondents purchased the brand within the past month (recent purchase behavior).",
+      "type": "dimension",
+      "table": 0
+    },
+    "gender": {
+      "definition": "gender",
+      "type": "dimension",
+      "table": 0
+    },
+    "media_used_at_least_weekly": {
+      "definition": "media used at least weekly for information",
+      "type": "dimension",
+      "table": 0
+    },
+    "n_food_delivery_ordered_per_week": {
+      "definition": "number of food delivery orders per week",
+      "type": "dimension",
+      "table": 0
+    },
+    "region": {
+      "definition": "region - specific geographical area",
+      "type": "dimension",
+      "table": 0
+    },
+    "stocked_concept_needs_performance": {
+      "definition": "Assessment of how well the Brand Stocked concept is perceived to meet specific consumer needs, as captured in the survey.",
+      "type": "dimension",
+      "table": 0
+    },
+    "18_to_24": {
+      "definition": "Age group: 18–24 years.",
+      "type": "dimension",
+      "table": 0
+    },
+    "20000_to_29999": {
+      "definition": "annual household income range from GBP 20 000 to GBP 29 999.",
+      "type": "dimension",
+      "table": 0
+    },
+    "30000_to_39999": {
+      "definition": "annual household income range from GBP 30 000 to GBP 39 999.",
+      "type": "dimension",
+      "table": 0
+    },
+    "35_to_44": {
+      "definition": "Age group: 35–44 years.",
+      "type": "dimension",
+      "table": 0
+    },
+    "50000_to_79999": {
+      "definition": "annual household income range from GBP 50 000 to GBP 79 999.",
+      "type": "dimension",
+      "table": 0
+    },
+    "aldi": {
+      "definition": "aldi is a brand in the retail industry",
+      "type": "dimension",
+      "table": 0
+    },
+    "allplants": {
+      "definition": "allplants is a UK plant-based food brand delivering chef-prepared frozen meals made from whole, natural ingredients focused on health and sustainability.",
+      "type": "dimension",
+      "table": 0
+    },
+    "always_cook_from_scratch": {
+      "definition": "Response value: always cook from scratch.",
+      "type": "dimension",
+      "table": 0
+    },
+    "appealing_taste_and_flavor": {
+      "definition": "appealing taste and flavor",
+      "type": "dimension",
+      "table": 0
+    },
+    "asda": {
+      "definition": "asda is a brand in the retail industry",
+      "type": "dimension",
+      "table": 0
+    },
+    "asian_food_delivered_indian_chinese_sushi": {
+      "definition": "asian food delivered including indian, chinese, and sushi",
+      "type": "dimension",
+      "table": 0
+    },
+    "below gbp___20_to_000": {
+      "definition": "Variable: below gbp___20_to_000",
+      "type": "dimension",
+      "table": 0
+    },
+    "blender": {
+      "definition": "Owns or uses kitchen device: blender.",
+      "type": "dimension",
+      "table": 0
+    },
+    "booths": {
+      "definition": "booths is a brand in the retail industry",
+      "type": "dimension",
+      "table": 0
+    },
+    "breakfast": {
+      "definition": "breakfast is the first meal of the day",
+      "type": "dimension",
+      "table": 0
+    },
+    "charlie_bighams": {
+      "definition": "Charlie Bigham’s is a British premium ready-meal brand offering fresh, oven-ready dishes made with high-quality ingredients and no artificial additives.",
+      "type": "dimension",
+      "table": 0
+    },
+    "cook": {
+      "definition": "COOK is a British frozen food brand offering chef-prepared meals made with quality ingredients, focusing on home-cooked taste and convenience.",
+      "type": "dimension",
+      "table": 0
+    },
+    "coop": {
+      "definition": "Response value: coop.",
+      "type": "dimension",
+      "table": 0
+    },
+    "cost_of_ingredients": {
+      "definition": "Response value: cost of ingredients.",
+      "type": "dimension",
+      "table": 0
+    },
+    "dislikes_cooking": {
+      "definition": "Response value: dislikes cooking.",
+      "type": "dimension",
+      "table": 0
+    },
+    "divorced_or_separated": {
+      "definition": "Response value: divorced or separated.",
+      "type": "dimension",
+      "table": 0
+    },
+    "doctorate_postdoctorate_or_equivalent_higher_degree": {
+      "definition": "Response value: doctorate postdoctorate or equivalent higher degree.",
+      "type": "dimension",
+      "table": 0
+    },
+    "east": {
+      "definition": "Region of residence: east.",
+      "type": "dimension",
+      "table": 0
+    },
+    "east_midlands": {
+      "definition": "Region of residence: east midlands.",
+      "type": "dimension",
+      "table": 0
+    },
+    "easy_preparation": {
+      "definition": "easy preparation",
+      "type": "dimension",
+      "table": 0
+    },
+    "facebook": {
+      "definition": "Social media platform: Facebook.",
+      "type": "dimension",
+      "table": 0
+    },
+    "fatigue": {
+      "definition": "Response value: fatigue.",
+      "type": "dimension",
+      "table": 0
+    },
+    "four": {
+      "definition": "Response value: four.",
+      "type": "dimension",
+      "table": 0
+    },
+    "frozen_food_specialist_eg_farmfoods": {
+      "definition": "Response value: frozen food specialist eg farmfoods.",
+      "type": "dimension",
+      "table": 0
+    },
+    "good_value_for_price": {
+      "definition": "good value for price",
+      "type": "dimension",
+      "table": 0
+    },
+    "good_visual_appeal_of_food": {
+      "definition": "good visual appeal of food",
+      "type": "dimension",
+      "table": 0
+    },
+    "gousto": {
+      "definition": "Gousto is a UK meal kit company that delivers fresh ingredients and easy-to-follow recipes, offering convenient home cooking with flexible weekly menus.",
+      "type": "dimension",
+      "table": 0
+    },
+    "grill": {
+      "definition": "Owns or uses kitchen device: grill.",
+      "type": "dimension",
+      "table": 0
+    },
+    "hassle_of_buying_lots_of_ingredients": {
+      "definition": "Response value: hassle of buying lots of ingredients.",
+      "type": "dimension",
+      "table": 0
+    },
+    "high_ingredient_quality": {
+      "definition": "high ingredient quality",
+      "type": "dimension",
+      "table": 0
+    },
+    "homemaker_housewife": {
+      "definition": "Response value: homemaker housewife.",
+      "type": "dimension",
+      "table": 0
+    },
+    "house_owned": {
+      "definition": "Response value: house owned.",
+      "type": "dimension",
+      "table": 0
+    },
+    "huel": {
+      "definition": "Huel is a British nutrition brand that produces complete meal replacements in the form of powders, drinks, and bars, designed to provide balanced, sustainable nutrition.",
+      "type": "dimension",
+      "table": 0
+    },
+    "kettle": {
+      "definition": "Owns or uses kitchen device: kettle.",
+      "type": "dimension",
+      "table": 0
+    },
+    "kids_meals": {
+      "definition": "kids meals",
+      "type": "dimension",
+      "table": 0
+    },
+    "lack_of_interest": {
+      "definition": "Response value: lack of interest.",
+      "type": "dimension",
+      "table": 0
+    },
+    "lidl": {
+      "definition": "lidl is a brand in the grocery retail industry",
+      "type": "dimension",
+      "table": 0
+    },
+    "limited_cooking_skills": {
+      "definition": "Response value: limited cooking skills.",
+      "type": "dimension",
+      "table": 0
+    },
+    "linkedin": {
+      "definition": "Social media platform: LinkedIn.",
+      "type": "dimension",
+      "table": 0
+    },
+    "little_food_waste": {
+      "definition": "little food waste generated from meals",
+      "type": "dimension",
+      "table": 0
+    },
+    "little_packaging_waste": {
+      "definition": "little packaging waste generated from products",
+      "type": "dimension",
+      "table": 0
+    },
+    "london": {
+      "definition": "Region of residence: london.",
+      "type": "dimension",
+      "table": 0
+    },
+    "love_it": {
+      "definition": "Response value: love it.",
+      "type": "dimension",
+      "table": 0
+    },
+    "married_or_living_with_partner": {
+      "definition": "Response value: married or living with partner.",
+      "type": "dimension",
+      "table": 0
+    },
+    "meal_at_work": {
+      "definition": "meal at work during lunch or breaks",
+      "type": "dimension",
+      "table": 0
+    },
+    "microwave": {
+      "definition": "Owns or uses kitchen device: microwave.",
+      "type": "dimension",
+      "table": 0
+    },
+    "news_websites_and_apps": {
+      "definition": "Response value: news websites and apps.",
+      "type": "dimension",
+      "table": 0
+    },
+    "no_children": {
+      "definition": "Response value: no children.",
+      "type": "dimension",
+      "table": 0
+    },
+    "north_east": {
+      "definition": "Region of residence: north east.",
+      "type": "dimension",
+      "table": 0
+    },
+    "one_to_two_times": {
+      "definition": "Response value: one to two times.",
+      "type": "dimension",
+      "table": 0
+    },
+    "only_on_weekends": {
+      "definition": "only on weekends",
+      "type": "dimension",
+      "table": 0
+    },
+    "other": {
+      "definition": "Response value: other.",
+      "type": "dimension",
+      "table": 0
+    },
+    "others": {
+      "definition": "Response value: others.",
+      "type": "dimension",
+      "table": 0
+    },
+    "petrol_stations": {
+      "definition": "petrol stations",
+      "type": "dimension",
+      "table": 0
+    },
+    "pizza_delivered": {
+      "definition": "pizza delivered",
+      "type": "dimension",
+      "table": 0
+    },
+    "pizza_frozen_or_chilled": {
+      "definition": "pizza frozen or chilled",
+      "type": "dimension",
+      "table": 0
+    },
+    "premade_sushi": {
+      "definition": "Response value: premade sushi.",
+      "type": "dimension",
+      "table": 0
+    },
+    "quorn": {
+      "definition": "Quorn is a British meat-free food brand that uses mycoprotein to make vegetarian and vegan products like mince, nuggets, and burgers.",
+      "type": "dimension",
+      "table": 0
+    },
+    "rather": {
+      "definition": "rather - preference expression",
+      "type": "dimension",
+      "table": 0
+    },
+    "rather_not": {
+      "definition": "rather not",
+      "type": "dimension",
+      "table": 0
+    },
+    "recipe_boxes_with_fresh_ingredients": {
+      "definition": "recipe boxes with fresh ingredients - meal kits",
+      "type": "dimension",
+      "table": 0
+    },
+    "retired": {
+      "definition": "Response value: retired.",
+      "type": "dimension",
+      "table": 0
+    },
+    "sainsburys": {
+      "definition": "sainsbury's is a brand in the retail industry",
+      "type": "dimension",
+      "table": 0
+    },
+    "scotland": {
+      "definition": "Region of residence: scotland.",
+      "type": "dimension",
+      "table": 0
+    },
+    "secondary_education_completed_a_level_or_equivalent": {
+      "definition": "Response value: secondary education completed a level or equivalent.",
+      "type": "dimension",
+      "table": 0
+    },
+    "some_vocational_or_technical_qualifications": {
+      "definition": "Response value: some vocational or technical qualifications.",
+      "type": "dimension",
+      "table": 0
+    },
+    "somewhat_poor": {
+      "definition": "somewhat poor",
+      "type": "dimension",
+      "table": 0
+    },
+    "south_west": {
+      "definition": "Region of residence: south west.",
+      "type": "dimension",
+      "table": 0
+    },
+    "stocked": {
+      "definition": "Brand stocked ltd., the frozen ready meals brand under study in the survey. This variable refers to the brand itself, not to inventory status.",
+      "type": "dimension",
+      "table": 0
+    },
+    "tesco": {
+      "definition": "tesco is a brand in the retail industry",
+      "type": "dimension",
+      "table": 0
+    },
+    "three_to_four_times": {
+      "definition": "Response value: three to four times.",
+      "type": "dimension",
+      "table": 0
+    },
+    "to_eat_on_the_go": {
+      "definition": "to eat on the go",
+      "type": "dimension",
+      "table": 0
+    },
+    "toaster": {
+      "definition": "Owns or uses kitchen device: toaster.",
+      "type": "dimension",
+      "table": 0
+    },
+    "too_much_effort_alone": {
+      "definition": "Response value: too much effort alone.",
+      "type": "dimension",
+      "table": 0
+    },
+    "unable_to_think_of_a_variety_of_meals": {
+      "definition": "Response value: unable to think of a variety of meals.",
+      "type": "dimension",
+      "table": 0
+    },
+    "websiteshop_of_product_brand": {
+      "definition": "Response value: websiteshop of product brand.",
+      "type": "dimension",
+      "table": 0
+    },
+    "whatsapp": {
+      "definition": "Social media platform: WhatsApp.",
+      "type": "dimension",
+      "table": 0
+    },
+    "yorkshire": {
+      "definition": "Region of residence: yorkshire.",
+      "type": "dimension",
+      "table": 0
+    },
+    "youngs": {
+      "definition": "Young's is a British seafood brand specializing in frozen fish and seafood products, best known for its fish fingers and battered fillets.",
+      "type": "dimension",
+      "table": 0
+    },
+    "total_sample_sample_size": {
+      "definition": "Total survey sample size (n=1,070).",
+      "type": "metric",
+      "table": 0
+    },
+    "total_count": {
+      "definition": "Total number of respondents in the survey (n=1,070).",
+      "type": "metric",
+      "table": 0
+    },
+    "total_share": {
+      "definition": "Share of the total sample matching the evaluated condition.",
+      "type": "metric",
+      "table": 0
+    },
+    "buy_regularly_count": {
+      "definition": "Count of regular Convenience Food buyers matching the evaluated condition.",
+      "type": "metric",
+      "table": 0
+    },
+    "buy_regularly_share": {
+      "definition": "Share of regular Convenience Food buyers within the evaluated item/category.",
+      "type": "metric",
+      "table": 0
+    },
+    "buy_occasionally_sample_size": {
+      "definition": "Sample size used to compute measures for occasional Convenience Food buyers.",
+      "type": "metric",
+      "table": 0
+    },
+    "buy_occasionally_count": {
+      "definition": "Count of occasional Convenience Food buyers matching the evaluated condition.",
+      "type": "metric",
+      "table": 0
+    },
+    "buy_occasionally_share": {
+      "definition": "Share of occasional Convenience Food buyers within the evaluated item/category.",
+      "type": "metric",
+      "table": 0
+    },
+    "buy_occasionally_index": {
+      "definition": "Index level for occasional Convenience Food buyers (100 = total sample baseline).",
+      "type": "metric",
+      "table": 0
+    },
+    "try_once_share": {
+      "definition": "Share of Convenience Food try-once consumers in the total sample.",
+      "type": "metric",
+      "table": 0
+    },
+    "Burritos and Tacos": {
+      "definition": "Variable: Burritos and Tacos",
+      "type": "dimension",
+      "table": 0
+    },
+    "Canned food (Canned Fish/Seafood, Canned Meat Products, Canned Fruits, Canned Vegetables, Other Canned Foods)": {
+      "definition": "Variable: Canned food (Canned Fish/Seafood, Canned Meat Products, Canned Fruits, Canned Vegetables, Other Canned Foods)",
+      "type": "dimension",
+      "table": 0
+    },
+    "Chilled prepared leafy salads and vegetables": {
+      "definition": "Variable: Chilled prepared leafy salads and vegetables",
+      "type": "dimension",
+      "table": 0
+    },
+    "Curries and Indian Dishes": {
+      "definition": "Variable: Curries and Indian Dishes",
+      "type": "dimension",
+      "table": 0
+    },
+    "Frozen Ready Meals": {
+      "definition": "Variable: Frozen Ready Meals",
+      "type": "dimension",
+      "table": 0
+    },
+    "Pizza (delivered)": {
+      "definition": "Variable: Pizza (delivered)",
+      "type": "dimension",
+      "table": 0
+    },
+    "Sandwiches and Wraps": {
+      "definition": "Variable: Sandwiches and Wraps",
+      "type": "dimension",
+      "table": 0
+    },
+    "total_sample_spend_sample_size": {
+      "definition": "Number of respondents in the total sample used to compute Convenience Food spending.",
+      "type": "metric",
+      "table": 1
+    },
+    "total_sample_spend_index": {
+      "definition": "Spending level in the total sample (index, 100 = benchmark).",
+      "type": "metric",
+      "table": 1
+    },
+    "probable_trialists_spend_sample_size": {
+      "definition": "Sample size used to compute Convenience Food spending among respondents who would buy/try Stocked.",
+      "type": "metric",
+      "table": 1
+    },
+    "probable_trialists_spend_avg": {
+      "definition": "Average Convenience Food category spend among respondents who would buy/try Stocked.",
+      "type": "metric",
+      "table": 1
+    },
+    "probable_trialists_share_of_wallet_index": {
+      "definition": "Spending share level among respondents who would buy/try Stocked (index, 100 = total sample).",
+      "type": "metric",
+      "table": 1
+    },
+    "non_probable_spend_index": {
+      "definition": "Spending level among respondents who would NOT buy Stocked (index, 100 = total sample).",
+      "type": "metric",
+      "table": 1
+    },
+    "non_probable_share_of_wallet_share": {
+      "definition": "Share of Convenience Food category spending contributed by respondents who would NOT buy Stocked.",
+      "type": "metric",
+      "table": 1
+    },
+    "buy_regularly_spend_sample_size": {
+      "definition": "Sample size used to compute Convenience Food spending among regular buyers.",
+      "type": "metric",
+      "table": 1
+    },
+    "buy_occasionally_spend_sample_size": {
+      "definition": "Sample size used to compute Convenience Food spending among occasional buyers.",
+      "type": "metric",
+      "table": 1
+    },
+    "try_once_spend_sample_size": {
+      "definition": "Sample size used to compute Convenience Food spending among try-once consumers.",
+      "type": "metric",
+      "table": 1
+    },
+    "try_once_spend_avg": {
+      "definition": "Average Convenience Food category spend among try-once consumers.",
+      "type": "metric",
+      "table": 1
+    },
+    "try_once_share_of_wallet_index": {
+      "definition": "Spending share level among Convenience Food try-once consumers (index, 100 = total sample).",
+      "type": "metric",
+      "table": 1
+    },
+    "Stocked - frozen food blocks": {
+      "definition": "Variable: Stocked - frozen food blocks",
+      "type": "dimension",
+      "table": 2
+    },
+    "total_sample_preference_avg": {
+      "definition": "Average preference rating in the total sample.",
+      "type": "metric",
+      "table": 2
+    },
+    "probable_trialists_preference_avg": {
+      "definition": "Average preference score among respondents who would buy/try Stocked.",
+      "type": "metric",
+      "table": 2
+    },
+    "probable_trialists_preference_index": {
+      "definition": "Preference level among respondents who would buy/try Stocked (index, 100 = total sample).",
+      "type": "metric",
+      "table": 2
+    },
+    "would_buy_preference_sample_size": {
+      "definition": "Sample size used to compute the preference measure among respondents who indicate they would buy Stocked.",
+      "type": "metric",
+      "table": 2
+    },
+    "would_buy_preference_index": {
+      "definition": "Preference level among respondents who indicate they would buy Stocked (index, 100 = total sample).",
+      "type": "metric",
+      "table": 2
+    },
+    "buy_occasionally_preference_avg": {
+      "definition": "Average preference score among occasional Convenience Food buyers.",
+      "type": "metric",
+      "table": 2
+    },
+    "try_once_preference_avg": {
+      "definition": "Average preference score among Convenience Food try-once consumers.",
+      "type": "metric",
+      "table": 2
+    },
+    "Appealing Taste and Flavor": {
+      "definition": "Variable: Appealing Taste and Flavor",
+      "type": "dimension",
+      "table": 3
+    },
+    "Appealing Texture": {
+      "definition": "Variable: Appealing Texture",
+      "type": "dimension",
+      "table": 3
+    },
+    "Good Availability in Stores": {
+      "definition": "Variable: Good Availability in Stores",
+      "type": "dimension",
+      "table": 3
+    },
+    "Little Food Waste": {
+      "definition": "Variable: Little Food Waste",
+      "type": "dimension",
+      "table": 3
+    },
+    "Little Storage Space Needed": {
+      "definition": "Variable: Little Storage Space Needed",
+      "type": "dimension",
+      "table": 3
+    },
+    "Long storage life": {
+      "definition": "Variable: Long storage life",
+      "type": "dimension",
+      "table": 3
+    },
+    "Low Price": {
+      "definition": "Variable: Low Price",
+      "type": "dimension",
+      "table": 3
+    },
+    "Right Portion Size": {
+      "definition": "Variable: Right Portion Size",
+      "type": "dimension",
+      "table": 3
+    },
+    "total_sample_need_sample_size": {
+      "definition": "Number of respondents in the total sample used to compute the need measure.",
+      "type": "metric",
+      "table": 3
+    },
+    "total_sample_need_share": {
+      "definition": "Share of the total sample expressing the evaluated need.",
+      "type": "metric",
+      "table": 3
+    },
+    "total_sample_stocked_performance_share": {
+      "definition": "Share of the total sample rating Stocked performance positively.",
+      "type": "metric",
+      "table": 3
+    },
+    "probable_need_share": {
+      "definition": "Share of respondents who would buy/try Stocked expressing the evaluated need.",
+      "type": "metric",
+      "table": 3
+    },
+    "probable_stocked_performance_index": {
+      "definition": "Stocked performance evaluation level among respondents who would buy/try Stocked (index, 100 = total sample).",
+      "type": "metric",
+      "table": 3
+    },
+    "non_probable_need_share": {
+      "definition": "Share of respondents who would NOT buy Stocked expressing the evaluated need.",
+      "type": "metric",
+      "table": 3
+    },
+    "non_probable_stocked_performance_index": {
+      "definition": "Stocked performance evaluation level among respondents who would NOT buy Stocked (index, 100 = total sample).",
+      "type": "metric",
+      "table": 3
+    },
+    "buy_regularly_need_index": {
+      "definition": "Need intensity level among regular Convenience Food buyers (index, 100 = total sample).",
+      "type": "metric",
+      "table": 3
+    },
+    "buy_regularly_stocked_performance_share": {
+      "definition": "Share of regular Convenience Food buyers rating Stocked performance positively.",
+      "type": "metric",
+      "table": 3
+    },
+    "buy_occasionally_need_sample_size": {
+      "definition": "Sample size used to compute the need measure among occasional Convenience Food buyers.",
+      "type": "metric",
+      "table": 3
+    },
+    "buy_occasionally_need_share": {
+      "definition": "Share of occasional Convenience Food buyers expressing the evaluated need.",
+      "type": "metric",
+      "table": 3
+    },
+    "buy_occasionally_stocked_performance_index": {
+      "definition": "Stocked performance evaluation level among occasional Convenience Food buyers (index, 100 = total sample).",
+      "type": "metric",
+      "table": 3
+    },
+    "try_once_index": {
+      "definition": "Index level for Convenience Food try-once consumers (100 = total sample baseline).",
+      "type": "metric",
+      "table": 3
+    },
+    "evaluation_stage": {
+      "definition": "categorical variable indicating the evaluation dimension applied to respondents, with levels covering need evaluation, stocked evaluation, and brand funnel.",
+      "type": "dimension",
+      "table": 4
+    },
+    "price": {
+      "definition": "price",
+      "type": "dimension",
+      "table": 4
+    },
+    "promotion": {
+      "definition": "promotion - marketing or sales activity",
+      "type": "dimension",
+      "table": 4
+    },
+    "marketing_type": {
+      "definition": "the specific approach or channel used in marketing (e.g., paid social, TV, in‐store).",
+      "type": "dimension",
+      "table": 4
+    },
+    "channel": {
+      "definition": "channel",
+      "type": "dimension",
+      "table": 4
+    },
+    "consideration": {
+      "definition": "consideration",
+      "type": "dimension",
+      "table": 4
+    },
+    "consumption_days": {
+      "definition": "consumption days",
+      "type": "dimension",
+      "table": 4
+    },
+    "hh_income": {
+      "definition": "hh income",
+      "type": "dimension",
+      "table": 4
+    },
+    "new_different": {
+      "definition": "new different",
+      "type": "dimension",
+      "table": 4
+    },
+    "purchase_ever": {
+      "definition": "purchase ever",
+      "type": "dimension",
+      "table": 4
+    },
+    "150000_or_more": {
+      "definition": "annual household income GBP 150 000 or more.",
+      "type": "dimension",
+      "table": 4
+    },
+    "co-op": {
+      "definition": "Variable: co-op",
+      "type": "dimension",
+      "table": 4
+    },
+    "equally_on_weekends_and_weekdays": {
+      "definition": "equally on weekends and weekdays",
+      "type": "dimension",
+      "table": 4
+    },
+    "frozen_food_specialist_e.g._farmfoods": {
+      "definition": "Variable: frozen_food_specialist_e.g._farmfoods",
+      "type": "dimension",
+      "table": 4
+    },
+    "none_of_these": {
+      "definition": "Response option indicating that none of the listed statements, items, or choices apply to the respondent.",
+      "type": "dimension",
+      "table": 4
+    },
+    "prefer_not_to_answer": {
+      "definition": "prefer not to answer",
+      "type": "dimension",
+      "table": 4
+    },
+    "special_occasion_gatherings_parties...": {
+      "definition": "Variable: special_occasion_gatherings_parties...",
+      "type": "dimension",
+      "table": 4
+    },
+    "website_shop_of_product_brand": {
+      "definition": "website shop of product brand",
+      "type": "dimension",
+      "table": 4
+    },
+    "sample_share": {
+      "definition": "Share of respondents within the evaluated item/category.",
+      "type": "metric",
+      "table": 4
+    },
+    "probable_trialists_share": {
+      "definition": "Share of respondents who would buy/try Stocked within the evaluated item/category.",
+      "type": "metric",
+      "table": 4
+    },
+    "non_probable_trialists_base": {
+      "definition": "Total number of respondents who would NOT buy Stocked in the survey (n=865).",
+      "type": "metric",
+      "table": 4
+    },
+    "non_probable_trialists_share": {
+      "definition": "Share of respondents who would NOT buy Stocked within the evaluated item/category.",
+      "type": "metric",
+      "table": 4
+    },
+    "buy_regularly_base": {
+      "definition": "Total number of regular Convenience Food buyers in the survey.",
+      "type": "metric",
+      "table": 4
+    },
+    "buy_occasionally_base": {
+      "definition": "Total number of occasional Convenience Food buyers in the survey.",
+      "type": "metric",
+      "table": 4
+    },
+    "buy_occasionally_n": {
+      "definition": "Number of occasional Convenience Food buyers within the evaluated item/category.",
+      "type": "metric",
+      "table": 4
+    }
+  }
+}
