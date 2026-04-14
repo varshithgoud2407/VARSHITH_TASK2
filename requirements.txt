@@ -1,0 +1,5 @@
+sentence-transformers
+pypdf
+python-docx
+python-pptx
+torch
