@@ -133,33 +133,17 @@ def _extract_from_json_glossary(path: Path) -> Tuple[str, Dict[str, str]]:
         print(f"Warning: could not decode {path} with utf-8 or latin-1")
         return full_text, glossary
 
-    def extract(obj, parent_key=""):
-        if isinstance(obj, dict):
-            if "definition" in obj and parent_key and isinstance(parent_key, str):
-                var_name = parent_key.lower()
-                desc = obj.get("definition") or obj.get("description") or obj.get("text")
-                if desc:
-                    glossary[var_name] = str(desc)
-                    nonlocal full_text
-                    full_text += f"{var_name}: {desc}\n"
-                    return
-            for k, v in obj.items():
-                if isinstance(v, str) and len(v) > 10:
-                    glossary[k.lower()] = v
-                    full_text += f"{k}: {v}\n"
-                else:
-                    extract(v, parent_key=k)
-        elif isinstance(obj, list):
-            for idx, item in enumerate(obj):
-                extract(item, parent_key=f"{parent_key}[{idx}]")
+    # Extract variable definitions from V section
+    for var_name, info in data.get("V", {}).items():
+        if isinstance(info, dict):
+            glossary[var_name] = info.get("definition", "")
+            full_text += f"{var_name}: {info.get('definition', '')}\n"
+    # Also extract sheet definitions
+    for sheet_name, info in data.get("SHEET_DEFINITIONS", {}).items():
+        if isinstance(info, dict):
+            glossary[sheet_name] = info.get("definition", "")
+            full_text += f"{sheet_name}: {info.get('definition', '')}\n"
 
-    extract(data)
-
-    if not glossary and isinstance(data, dict):
-        for k, v in data.items():
-            if isinstance(v, str):
-                glossary[k.lower()] = v
-                full_text += f"{k}: {v}\n"
     return full_text, glossary
 
 def _extract_text_from_file(file_path: Path) -> Tuple[str, Dict[str, str]]:
@@ -364,6 +348,31 @@ def retrieve(query: str) -> List[Dict]:
 
     glossary_result = _try_glossary_lookup(query)
     if glossary_result:
+        # Get hybrid results and prepend glossary hit
+        bm25_res = _bm25_retrieve(query, top_k=20)
+        dense_res = _dense_retrieve(query, top_k=20)
+
+        if bm25_res or dense_res:
+            bm25_boosted, dense_boosted = _apply_boosts(query, bm25_res, dense_res)
+            fused = _rrf_fusion([bm25_boosted, dense_boosted])
+            if fused:
+                max_score = fused[0][1]
+                min_score = fused[-1][1] if len(fused) > 1 else max_score
+                if max_score == min_score:
+                    norm = [1.0] * len(fused)
+                else:
+                    norm = [(s - min_score) / (max_score - min_score) for _, s in fused]
+
+                remaining = []
+                for i, (doc_id, _) in enumerate(fused[:4]):
+                    chunk = _CORPUS[doc_id]
+                    remaining.append({
+                        "text": chunk["text"],
+                        "source": chunk["source"],
+                        "score": norm[i]
+                    })
+                return glossary_result + remaining
+        # Fallback if no hybrid results
         return glossary_result
 
     bm25_res = _bm25_retrieve(query, top_k=20)
@@ -374,7 +383,7 @@ def retrieve(query: str) -> List[Dict]:
         candidates = []
         for idx, chunk in enumerate(_CORPUS):
             text_lower = chunk["text"].lower()
-            score = sum(1 for t in terms if t in text_lower) / (len(terms) + 1e-6)
+            score = sum(1 for t in terms of terms if t in text_lower) / (len(terms) + 1e-6)
             if score > 0:
                 candidates.append((idx, score))
         candidates.sort(key=lambda x: x[1], reverse=True)
