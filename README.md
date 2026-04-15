@@ -1,77 +1,97 @@
-# VARSHITH_TASK2 – Hybrid Document Retrieval System
+# VARSHITH_TASK2 - Hybrid Document Retrieval System
 
 ## Overview
-A local‑first retrieval system for mixed file collections (PDF, PPTX, DOCX, EML, JSON).  
-It answers both **broad** research questions (e.g., *“What was the main finding of the brand study?”*) and **narrow** variable lookups (e.g., *“What does `frm_brand_awareness` measure?”*) using:
+A local-only retrieval system for mixed file collections (PDF, PPTX, DOCX, EML, JSON).
+It answers both broad research questions (for example, "What was the main finding of the brand study?") and narrow variable lookups (for example, "What does `frm_brand_awareness` measure?") using:
 
-- **Hybrid search** – BM25 (sparse) + `all-MiniLM-L6-v2` dense embeddings  
-- **Reciprocal Rank Fusion (RRF)** – robust combination of both retrievers  
-- **Glossary prioritisation** – exact/fuzzy matching with prefix stripping (e.g., `frm_*`)  
-- **Source‑aware boosting** – email files boosted for sender queries, glossary down‑weighted for broad questions  
+- Hybrid search - BM25 (sparse) + `all-MiniLM-L6-v2` dense embeddings
+- Reciprocal Rank Fusion (RRF) - rank-based combination, more robust than fixed linear score weighting
+- Glossary prioritisation - recursively extracts definitions from the nested `glossary_partial.json` structure, then uses exact/fuzzy matching with prefix stripping such as `frm_*`
+- Source-aware boosting - email files are boosted for sender-style queries, while glossary chunks are down-weighted for broad queries
 
-No external LLM APIs – everything runs locally on Python 3.12+.
+No external LLM APIs are used. Everything runs locally on Python 3.12+.
+
+## How It Works
+
+1. Load and chunk all documents in `test_files/` with a minimum chunk length of 50 characters.
+2. Build indices:
+   - BM25 over tokenised chunks
+   - Dense embeddings with `all-MiniLM-L6-v2` when available
+3. Extract glossary entries by recursively parsing `glossary_partial.json`.
+4. Per query:
+   - Detect narrow queries using variable-like patterns and definition-style phrasing.
+   - If narrow, try glossary lookup first with exact, fuzzy, and prefix-stripped matching.
+   - Otherwise run hybrid retrieval:
+     - BM25 ranking + dense similarity
+     - Source-specific boosts
+     - RRF fusion
+     - Return top-5 results as `text`, `source`, `score`
 
 ## Requirements
-Install dependencies with:
 
 ```bash
 pip install -r requirements.txt
 ```
 
 `requirements.txt` includes:
-- `sentence-transformers` – dense embeddings  
-- `rank-bm25` – sparse retrieval  
-- `pdfplumber`, `python-pptx`, `python-docx` – document parsing  
-- `numpy` – similarity computations  
+- `sentence-transformers` - dense embeddings
+- `rank-bm25==0.2.2` - sparse retrieval
+- `pdfplumber`, `python-pptx`, `python-docx` - document parsing
+- `numpy` - similarity computations
 
 ## Usage
+
 ```python
 from retrieve import retrieve
 
-# Broad query
 results = retrieve("What was the main finding of the brand study?")
-
-# Narrow variable query
 results = retrieve("What does the variable frm_brand_awareness measure?")
 ```
 
-Each result is a `dict` with `text`, `source` (filename or `"glossary"`), and `score`.
+Each result is a dictionary with:
+- `text`
+- `source`
+- `score`
 
 ## Testing
-Run the provided evaluation harness:
 
 ```bash
 python test_local.py
 ```
 
-This executes 10 sample queries (5 broad, 5 narrow) and reports a keyword‑based sanity score.  
-**Note:** The real evaluation uses LLM‑as‑judge on different queries – this is only for local iteration.
+This runs 10 sample queries and reports a keyword-based sanity score.
+The real evaluation uses different unseen queries and LLM-as-judge, so this script is only a local development check.
 
 ## File Structure
-```
+
+```text
 VARSHITH_TASK2/
-├── retrieve.py              # Main retrieval implementation
-├── requirements.txt         # Python dependencies
-├── test_local.py            # Local test harness
-├── README.md                # This file
-├── test_files/              # Input documents (scanned at runtime)
-│   ├── research_proposal.pdf
-│   ├── phase2_findings.pptx
-│   ├── Stocked_questionnaire_s.docx
-│   ├── glossary_partial.json
-│   └── *.eml (5 email files)
-└── .git/                    # Git history (included in submission)
+|-- retrieve.py
+|-- requirements.txt
+|-- test_local.py
+|-- README.md
+|-- test_files/
+|   |-- research_proposal.pdf
+|   |-- phase2_findings.pptx
+|   |-- Stocked_questionnaire_s.docx
+|   |-- glossary_partial.json
+|   `-- *.eml
+`-- .git/
 ```
 
 ## Reproducibility
-1. Clone or unzip the repository.  
-2. Install dependencies: `pip install -r requirements.txt`  
-3. Run `python test_local.py` – no hardcoded paths, no credentials, no external API calls.  
 
-The system automatically scans the `test_files/` directory on the first call to `retrieve()` and caches the corpus, BM25 index, and embeddings.
+1. Clone or unzip the repository.
+2. Install dependencies with `pip install -r requirements.txt`.
+3. Run `python test_local.py`.
 
+The system scans `test_files/` at runtime on the first call to `retrieve()` and then caches the corpus, BM25 index, glossary, and dense embeddings in memory.
 
-## Github link
+## Expected Performance
+
+Broad queries and narrow glossary lookups are both supported, but the exact score depends on the local environment and whether dense embeddings are available.
+The provided `test_local.py` output is a sanity check only and should not be treated as the official evaluation score.
+
+## GitHub Repository
+
 https://github.com/varshithgoud2407/VARSHITH_TASK2
-
----
