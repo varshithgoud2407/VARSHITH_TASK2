@@ -1,5 +1,5 @@
 sentence-transformers
-rank-bm25
+rank-bm25>=0.2.2,<0.3
 pdfplumber
 python-pptx
 python-docx
