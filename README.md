@@ -72,8 +72,8 @@ The system automatically scans the `test_files/` directory on the first call to 
 
 ## Performance Highlights (local evaluation)
 - **Glossary coverage** – 185 variable definitions loaded  
-- **Narrow query P@1** – 82% (glossary exact/fuzzy match)  
-- **Broad query P@1** – 80% (hybrid RRF fusion)  
+- **Narrow query P@1** – 22% (glossary exact/fuzzy match)  
+- **Broad query P@1** – 46% (hybrid RRF fusion)  
 - **First‑run setup** – ~15 seconds (model load + embedding all chunks)  
 - **Subsequent queries** – near‑instant (cached corpus)
 
