@@ -1,5 +1,6 @@
-sentence-transformers>=2.2.0
-numpy>=1.24.0
-pdfplumber>=0.9.0
-python-pptx>=0.6.21
-python-docx>=0.8.11
+sentence-transformers
+rank-bm25
+pdfplumber
+python-pptx
+python-docx
+numpy
