@@ -122,6 +122,11 @@ def _normalize_glossary_key(value: str) -> str:
     normalized = re.sub(r"\s+", " ", normalized)
     return normalized
 
+def _is_placeholder_definition(key: str, definition: str) -> bool:
+    key_normalized = _normalize_glossary_key(key)
+    definition_normalized = _normalize_glossary_key(definition)
+    return not definition_normalized or definition_normalized == key_normalized
+
 def _store_glossary_entry(glossary: Dict[str, str], full_lines: List[str], key: str, definition: str) -> None:
     raw_key = key.strip().lower()
     cleaned_definition = definition.strip()
@@ -312,12 +317,11 @@ def _apply_boosts(query: str,
 
 def _is_narrow_query(query: str) -> bool:
     query_lower = query.lower()
-    glossary_tokens = re.findall(r"\b[a-z][a-z0-9_]{4,}\b", query_lower)
-    if any(token in _GLOSSARY for token in glossary_tokens):
-        return True
     if re.search(r"\b(?:frm|var|q)_[a-z0-9_]{3,}\b", query_lower):
         return True
-    return bool(re.search(r"\b[a-z]+_[a-z0-9_]{4,}\b", query_lower))
+    if re.search(r"\b[a-z]+_[a-z0-9_]{4,}\b", query_lower):
+        return True
+    return bool(re.search(r"(?:what does|define|meaning of|measure|scale|represent)\s+`?[a-z_]+`?", query_lower))
 
 def _rrf_fusion(lists: List[List[Tuple[int, float]]], k: int = 60) -> List[Tuple[int, float]]:
     rrf = {}
@@ -331,7 +335,7 @@ def _rrf_fusion(lists: List[List[Tuple[int, float]]], k: int = 60) -> List[Tuple
 # Glossary lookup (improved with prefix stripping)
 # ----------------------------------------------------------------------
 def _try_glossary_lookup(query: str) -> Optional[List[Dict]]:
-    if not _GLOSSARY:
+    if not _GLOSSARY or not _is_narrow_query(query):
         return None
 
     query_lower = query.lower()
@@ -375,28 +379,66 @@ def _try_glossary_lookup(query: str) -> Optional[List[Dict]]:
                 normalized_candidates.append(normalized)
                 seen.add(normalized)
 
+    best_match = None
+    best_score = -1
     for cand in normalized_candidates:
         cand_normalized = _normalize_glossary_key(cand)
+        stripped_variants = []
+        for prefix in ["frm_", "var_", "q_"]:
+            if cand.startswith(prefix):
+                stripped = cand[len(prefix):]
+                stripped_variants.extend([stripped, _normalize_glossary_key(stripped)])
+
         if cand in _GLOSSARY:
-            return [{
-                "text": f"Variable '{cand}' measures: {_GLOSSARY[cand]}",
-                "source": "glossary",
-                "score": 1.0
-            }]
-        for key, desc in _GLOSSARY.items():
-            key_normalized = _normalize_glossary_key(key)
-            if cand_normalized == key_normalized:
+            definition = _GLOSSARY[cand]
+            if not _is_placeholder_definition(cand, definition):
                 return [{
-                    "text": f"Variable '{key}' measures: {desc}",
+                    "text": f"Variable '{cand}' measures: {definition}",
                     "source": "glossary",
                     "score": 1.0
                 }]
-            if cand_normalized in key_normalized or key_normalized in cand_normalized:
-                return [{
-                    "text": f"Variable '{key}' (close match to '{cand}'): {desc}",
-                    "source": "glossary",
-                    "score": 0.95
-                }]
+
+        for key, desc in _GLOSSARY.items():
+            key_normalized = _normalize_glossary_key(key)
+            score = -1
+            if cand_normalized == key_normalized:
+                score = 300
+            elif cand == key:
+                score = 290
+            elif any(variant and (key == variant or key_normalized == variant) for variant in stripped_variants):
+                score = 260
+            elif any(variant and (key.endswith(f"_{variant}") or key_normalized.endswith(f" {variant}")) for variant in stripped_variants):
+                score = 250
+            elif any(variant and variant in key_normalized for variant in stripped_variants):
+                score = 225
+            elif cand_normalized in key_normalized or key_normalized in cand_normalized:
+                score = 200
+
+            if score < 0:
+                continue
+            is_placeholder = _is_placeholder_definition(key, desc)
+            if is_placeholder:
+                score -= 120
+            else:
+                score += 15
+            score += min(len(desc.strip()) // 40, 10)
+            if score > best_score:
+                best_score = score
+                best_match = (key, desc, cand, score)
+
+    if best_match is not None:
+        key, desc, cand, score = best_match
+        exactish = score >= 300 or _normalize_glossary_key(key) == _normalize_glossary_key(cand)
+        confidence = 1.0 if exactish else 0.95
+        if exactish:
+            text = f"Variable '{key}' measures: {desc}"
+        else:
+            text = f"Variable '{key}' (close match to '{cand}'): {desc}"
+        return [{
+            "text": text,
+            "source": "glossary",
+            "score": confidence
+        }]
     return None
 
 
