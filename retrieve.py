@@ -45,6 +45,7 @@ _BM25: Any = None
 _EMBEDDINGS: Optional[np.ndarray] = None
 _EMBEDDER: Any = None
 _GLOSSARY: Dict[str, str] = {}
+MIN_CHUNK_CHARS = 50
 
 
 # ----------------------------------------------------------------------
@@ -115,12 +116,45 @@ def _extract_from_eml(path: Path) -> Tuple[str, Dict]:
         pass
     return "\n".join(text), {}
 
-def _extract_from_json_glossary(path: Path) -> Tuple[str, Dict[str, str]]:
-    glossary = {}
-    full_text = ""
+def _normalize_glossary_key(value: str) -> str:
+    normalized = value.strip().lower().replace("-", " ").replace("/", " ")
+    normalized = normalized.replace("_", " ")
+    normalized = re.sub(r"\s+", " ", normalized)
+    return normalized
 
-    # Try UTF-8 first, then fallback to latin-1 (never fails)
-    encodings = ['utf-8', 'latin-1']
+def _store_glossary_entry(glossary: Dict[str, str], full_lines: List[str], key: str, definition: str) -> None:
+    raw_key = key.strip().lower()
+    cleaned_definition = definition.strip()
+    if not raw_key or not cleaned_definition:
+        return
+    glossary[raw_key] = cleaned_definition
+    full_lines.append(f"{key}: {cleaned_definition}")
+
+def _extract_glossary_entries(data: Any, glossary: Dict[str, str], full_lines: List[str]) -> None:
+    if not isinstance(data, dict):
+        return
+
+    definition = data.get("definition")
+    if isinstance(definition, str):
+        for key, value in data.items():
+            if key == "definition" or not isinstance(value, dict):
+                continue
+            nested_definition = value.get("definition")
+            if isinstance(nested_definition, str):
+                _store_glossary_entry(glossary, full_lines, key, nested_definition)
+        return
+
+    for key, value in data.items():
+        if isinstance(value, dict):
+            child_definition = value.get("definition")
+            if isinstance(child_definition, str):
+                _store_glossary_entry(glossary, full_lines, key, child_definition)
+            _extract_glossary_entries(value, glossary, full_lines)
+
+def _extract_from_json_glossary(path: Path) -> Tuple[str, Dict[str, str]]:
+    glossary: Dict[str, str] = {}
+    full_lines: List[str] = []
+    encodings = ["utf-8", "latin-1"]
     data = None
     for enc in encodings:
         try:
@@ -131,20 +165,10 @@ def _extract_from_json_glossary(path: Path) -> Tuple[str, Dict[str, str]]:
             continue
     if data is None:
         print(f"Warning: could not decode {path} with utf-8 or latin-1")
-        return full_text, glossary
+        return "", glossary
 
-    # Extract variable definitions from V section
-    for var_name, info in data.get("V", {}).items():
-        if isinstance(info, dict):
-            glossary[var_name] = info.get("definition", "")
-            full_text += f"{var_name}: {info.get('definition', '')}\n"
-    # Also extract sheet definitions
-    for sheet_name, info in data.get("SHEET_DEFINITIONS", {}).items():
-        if isinstance(info, dict):
-            glossary[sheet_name] = info.get("definition", "")
-            full_text += f"{sheet_name}: {info.get('definition', '')}\n"
-
-    return full_text, glossary
+    _extract_glossary_entries(data, glossary, full_lines)
+    return "\n".join(full_lines), glossary
 
 def _extract_text_from_file(file_path: Path) -> Tuple[str, Dict[str, str]]:
     ext = file_path.suffix.lower()
@@ -169,12 +193,12 @@ def _chunk_text(text: str, chunk_size: int = 300, overlap: int = 50) -> List[str
         return []
     words = text.split()
     if len(words) <= chunk_size:
-        return [text]
+        return [text] if len(text.strip()) >= MIN_CHUNK_CHARS else []
     chunks = []
     step = chunk_size - overlap
     for i in range(0, len(words), step):
         chunk = " ".join(words[i:i+chunk_size])
-        if chunk:
+        if len(chunk.strip()) >= MIN_CHUNK_CHARS:
             chunks.append(chunk)
         if i + chunk_size >= len(words):
             break
@@ -191,10 +215,13 @@ def _build_corpus(data_dir: str = "test_files") -> None:
 
     data_path = Path(data_dir)
     if not data_path.exists():
-        if (Path(".") / "test_files").exists():
+        module_data_path = Path(__file__).resolve().parent / "test_files"
+        if module_data_path.exists():
+            data_path = module_data_path
+        elif (Path(".") / "test_files").exists():
             data_path = Path(".") / "test_files"
         else:
-            data_path = Path(".")
+            data_path = Path(__file__).resolve().parent
 
     all_chunks = []
     glossary_global = {}
@@ -283,6 +310,15 @@ def _apply_boosts(query: str,
     
     return boost_list(bm25_results), boost_list(dense_results)
 
+def _is_narrow_query(query: str) -> bool:
+    query_lower = query.lower()
+    glossary_tokens = re.findall(r"\b[a-z][a-z0-9_]{4,}\b", query_lower)
+    if any(token in _GLOSSARY for token in glossary_tokens):
+        return True
+    if re.search(r"\b(?:frm|var|q)_[a-z0-9_]{3,}\b", query_lower):
+        return True
+    return bool(re.search(r"\b[a-z]+_[a-z0-9_]{4,}\b", query_lower))
+
 def _rrf_fusion(lists: List[List[Tuple[int, float]]], k: int = 60) -> List[Tuple[int, float]]:
     rrf = {}
     for lst in lists:
@@ -299,39 +335,63 @@ def _try_glossary_lookup(query: str) -> Optional[List[Dict]]:
         return None
 
     query_lower = query.lower()
-    candidates = []
+    candidates: List[str] = []
 
-    matches = re.findall(r"`([a-z_]+)`", query_lower)
+    matches = re.findall(r"`([a-z0-9_]+)`", query_lower)
     candidates.extend(matches)
-    words = re.findall(r"\b[a-z][a-z_]{3,}\b", query_lower)
-    for w in words:
-        if "_" in w and len(w) <= 50:
-            candidates.append(w)
+    words = re.findall(r"\b[a-z][a-z0-9_]{3,}\b", query_lower)
+    for word in words:
+        if "_" in word and len(word) <= 50:
+            candidates.append(word)
     measure_match = re.search(r"(?:what does|define|meaning of)\s+`?([a-z_]+)`?", query_lower)
     if measure_match:
         candidates.append(measure_match.group(1))
 
-    if not candidates:
+    normalized_candidates: List[str] = []
+    seen = set()
+    for candidate in candidates:
+        variants = [
+            candidate.strip().lower(),
+            _normalize_glossary_key(candidate),
+        ]
+        for prefix in ["frm_", "var_", "q_"]:
+            if candidate.startswith(prefix):
+                stripped = candidate[len(prefix):]
+                variants.append(stripped)
+                variants.append(_normalize_glossary_key(stripped))
+        for variant in variants:
+            if variant and variant not in seen:
+                normalized_candidates.append(variant)
+                seen.add(variant)
+
+    if not normalized_candidates and not _is_narrow_query(query):
         return None
 
-    for cand in candidates:
+    if not candidates:
+        fallback_tokens = re.findall(r"\b[a-z][a-z0-9_]{4,}\b", query_lower)
+        for token in fallback_tokens:
+            normalized = _normalize_glossary_key(token)
+            if normalized and normalized not in seen:
+                normalized_candidates.append(normalized)
+                seen.add(normalized)
+
+    for cand in normalized_candidates:
+        cand_normalized = _normalize_glossary_key(cand)
         if cand in _GLOSSARY:
             return [{
                 "text": f"Variable '{cand}' measures: {_GLOSSARY[cand]}",
                 "source": "glossary",
                 "score": 1.0
             }]
-        for prefix in ["frm_", "var_", "q_"]:
-            if cand.startswith(prefix):
-                stripped = cand[len(prefix):]
-                if stripped in _GLOSSARY:
-                    return [{
-                        "text": f"Variable '{cand}' (matches '{stripped}'): {_GLOSSARY[stripped]}",
-                        "source": "glossary",
-                        "score": 1.0
-                    }]
         for key, desc in _GLOSSARY.items():
-            if cand in key or key in cand:
+            key_normalized = _normalize_glossary_key(key)
+            if cand_normalized == key_normalized:
+                return [{
+                    "text": f"Variable '{key}' measures: {desc}",
+                    "source": "glossary",
+                    "score": 1.0
+                }]
+            if cand_normalized in key_normalized or key_normalized in cand_normalized:
                 return [{
                     "text": f"Variable '{key}' (close match to '{cand}'): {desc}",
                     "source": "glossary",
