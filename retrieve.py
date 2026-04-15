@@ -6,7 +6,6 @@ Hybrid retrieval system with:
 - RRF fusion + caching
 """
 
-import os
 import json
 import re
 from pathlib import Path
@@ -368,7 +367,7 @@ def _try_glossary_lookup(query: str) -> Optional[List[Dict]]:
                 normalized_candidates.append(variant)
                 seen.add(variant)
 
-    if not normalized_candidates and not _is_narrow_query(query):
+    if not normalized_candidates:
         return None
 
     if not candidates:

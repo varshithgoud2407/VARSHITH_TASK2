@@ -70,17 +70,6 @@ VARSHITH_TASK2/
 
 The system automatically scans the `test_files/` directory on the first call to `retrieve()` and caches the corpus, BM25 index, and embeddings.
 
-## Performance Highlights (local evaluation)
-- **Glossary coverage** – 185 variable definitions loaded  
-- **Narrow query P@1** – 22% (glossary exact/fuzzy match)  
-- **Broad query P@1** – 46% (hybrid RRF fusion)  
-- **First‑run setup** – ~15 seconds (model load + embedding all chunks)  
-- **Subsequent queries** – near‑instant (cached corpus)
-
-## Known Limitations
-- Table extraction from PPTX/DOCX is limited (plain text only).  
-- Domain‑specific jargon (e.g., `frm_*` prefixes) relies on BM25 + prefix stripping – a fine‑tuned embedding model would improve recall.  
-- Email boosting is heuristic (keywords `"email"`, `"sent"`, `"sender"`).  
 
 ## Github link
 https://github.com/varshithgoud2407/VARSHITH_TASK2
