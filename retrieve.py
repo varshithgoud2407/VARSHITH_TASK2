@@ -1,100 +1,112 @@
 """
 Hybrid retrieval system with:
-- Glossary prioritisation (exact/fuzzy)
-- Email boosting for sender queries
-- Glossary downweighting for broad queries
-- RRF fusion + caching
+- Recursive glossary extraction from nested JSON
+- Glossary prioritisation for narrow variable queries
+- Email boosting for sender-style queries
+- BM25 + dense retrieval with RRF fusion
 """
 
 import json
+import logging
 import re
 from pathlib import Path
-from typing import List, Dict, Tuple, Any, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
-# Optional imports
+import numpy as np
+
 try:
     import pdfplumber
 except ImportError:
     pdfplumber = None
+
 try:
     from pptx import Presentation
 except ImportError:
     Presentation = None
+
 try:
     from docx import Document
 except ImportError:
     Document = None
+
 try:
     from email import policy
     from email.parser import BytesParser
 except ImportError:
+    policy = None
     BytesParser = None
+
 try:
     from rank_bm25 import BM25Okapi
 except ImportError:
     BM25Okapi = None
+
 try:
     from sentence_transformers import SentenceTransformer
 except ImportError:
     SentenceTransformer = None
-import numpy as np
 
-_CORPUS: List[Dict] = []
+
+logger = logging.getLogger(__name__)
+
+MIN_CHUNK_CHARS = 50
+PREFIXES = ("frm_", "var_", "q_")
+
+_CORPUS: List[Dict[str, Any]] = []
 _BM25: Any = None
 _EMBEDDINGS: Optional[np.ndarray] = None
 _EMBEDDER: Any = None
 _GLOSSARY: Dict[str, str] = {}
-MIN_CHUNK_CHARS = 50
 
 
-# ----------------------------------------------------------------------
-# Text extraction (returns (text, glossary_dict))
-# ----------------------------------------------------------------------
-def _extract_from_pdf(path: Path) -> Tuple[str, Dict]:
+def _extract_from_pdf(path: Path) -> Tuple[str, Dict[str, str]]:
     if pdfplumber is None:
         return "", {}
-    text = []
+    text: List[str] = []
     try:
         with pdfplumber.open(path) as pdf:
             for page in pdf.pages:
-                t = page.extract_text()
-                if t:
-                    text.append(t)
-    except Exception:
-        pass
+                page_text = page.extract_text()
+                if page_text:
+                    text.append(page_text)
+    except Exception as exc:
+        logger.warning("Error parsing PDF %s: %s", path, exc)
     return "\n".join(text), {}
 
-def _extract_from_pptx(path: Path) -> Tuple[str, Dict]:
+
+def _extract_from_pptx(path: Path) -> Tuple[str, Dict[str, str]]:
     if Presentation is None:
         return "", {}
-    text = []
+    text: List[str] = []
     try:
         prs = Presentation(path)
         for slide in prs.slides:
             for shape in slide.shapes:
                 if hasattr(shape, "text") and shape.text:
                     text.append(shape.text)
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.warning("Error parsing PPTX %s: %s", path, exc)
     return "\n".join(text), {}
 
-def _extract_from_docx(path: Path) -> Tuple[str, Dict]:
+
+def _extract_from_docx(path: Path) -> Tuple[str, Dict[str, str]]:
     if Document is None:
         return "", {}
-    text = []
+    text: List[str] = []
     try:
         doc = Document(path)
         for para in doc.paragraphs:
             if para.text:
                 text.append(para.text)
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.warning("Error parsing DOCX %s: %s", path, exc)
     return "\n".join(text), {}
 
-def _extract_from_eml(path: Path) -> Tuple[str, Dict]:
-    if BytesParser is None:
+
+def _extract_from_eml(path: Path) -> Tuple[str, Dict[str, str]]:
+    if BytesParser is None or policy is None:
         return "", {}
-    text = []
+    text: List[str] = []
     try:
         with open(path, "rb") as f:
             msg = BytesParser(policy=policy.default).parse(f)
@@ -111,107 +123,104 @@ def _extract_from_eml(path: Path) -> Tuple[str, Dict]:
             body = msg.get_content()
         if body:
             text.append(body)
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.warning("Error parsing EML %s: %s", path, exc)
     return "\n".join(text), {}
+
 
 def _normalize_glossary_key(value: str) -> str:
     normalized = value.strip().lower().replace("-", " ").replace("/", " ")
     normalized = normalized.replace("_", " ")
-    normalized = re.sub(r"\s+", " ", normalized)
-    return normalized
+    return re.sub(r"\s+", " ", normalized)
+
 
 def _is_placeholder_definition(key: str, definition: str) -> bool:
-    key_normalized = _normalize_glossary_key(key)
-    definition_normalized = _normalize_glossary_key(definition)
-    return not definition_normalized or definition_normalized == key_normalized
+    return _normalize_glossary_key(key) == _normalize_glossary_key(definition)
 
-def _store_glossary_entry(glossary: Dict[str, str], full_lines: List[str], key: str, definition: str) -> None:
-    raw_key = key.strip().lower()
+
+def _store_glossary_entry(
+    glossary: Dict[str, str], full_lines: List[str], key: str, definition: str
+) -> None:
+    cleaned_key = key.strip().lower()
     cleaned_definition = definition.strip()
-    if not raw_key or not cleaned_definition:
+    if not cleaned_key or not cleaned_definition:
         return
-    glossary[raw_key] = cleaned_definition
+    glossary[cleaned_key] = cleaned_definition
     full_lines.append(f"{key}: {cleaned_definition}")
 
-def _extract_glossary_entries(data: Any, glossary: Dict[str, str], full_lines: List[str]) -> None:
+
+def _extract_glossary_entries(
+    data: Any, glossary: Dict[str, str], full_lines: List[str]
+) -> None:
     if not isinstance(data, dict):
         return
 
-    definition = data.get("definition")
-    if isinstance(definition, str):
-        for key, value in data.items():
-            if key == "definition" or not isinstance(value, dict):
-                continue
-            nested_definition = value.get("definition")
-            if isinstance(nested_definition, str):
-                _store_glossary_entry(glossary, full_lines, key, nested_definition)
-        return
-
     for key, value in data.items():
-        if isinstance(value, dict):
-            child_definition = value.get("definition")
-            if isinstance(child_definition, str):
-                _store_glossary_entry(glossary, full_lines, key, child_definition)
-            _extract_glossary_entries(value, glossary, full_lines)
+        if not isinstance(value, dict):
+            continue
+        definition = value.get("definition")
+        if isinstance(definition, str):
+            _store_glossary_entry(glossary, full_lines, key, definition)
+        _extract_glossary_entries(value, glossary, full_lines)
+
 
 def _extract_from_json_glossary(path: Path) -> Tuple[str, Dict[str, str]]:
     glossary: Dict[str, str] = {}
     full_lines: List[str] = []
-    encodings = ["utf-8", "latin-1"]
     data = None
-    for enc in encodings:
+
+    for encoding in ("utf-8", "latin-1"):
         try:
-            with open(path, "r", encoding=enc) as f:
+            with open(path, "r", encoding=encoding) as f:
                 data = json.load(f)
             break
         except (UnicodeDecodeError, json.JSONDecodeError):
             continue
+        except Exception as exc:
+            logger.warning("Error loading glossary %s: %s", path, exc)
+            return "", glossary
+
     if data is None:
-        print(f"Warning: could not decode {path} with utf-8 or latin-1")
+        logger.warning("Could not decode glossary file %s", path)
         return "", glossary
 
     _extract_glossary_entries(data, glossary, full_lines)
     return "\n".join(full_lines), glossary
 
+
 def _extract_text_from_file(file_path: Path) -> Tuple[str, Dict[str, str]]:
-    ext = file_path.suffix.lower()
-    if ext == ".pdf":
+    suffix = file_path.suffix.lower()
+    if suffix == ".pdf":
         return _extract_from_pdf(file_path)
-    elif ext == ".pptx":
+    if suffix == ".pptx":
         return _extract_from_pptx(file_path)
-    elif ext == ".docx":
+    if suffix == ".docx":
         return _extract_from_docx(file_path)
-    elif ext == ".eml":
+    if suffix == ".eml":
         return _extract_from_eml(file_path)
-    elif ext == ".json" and "glossary" in file_path.name.lower():
+    if suffix == ".json" and "glossary" in file_path.name.lower():
         return _extract_from_json_glossary(file_path)
     return "", {}
 
 
-# ----------------------------------------------------------------------
-# Chunking
-# ----------------------------------------------------------------------
 def _chunk_text(text: str, chunk_size: int = 300, overlap: int = 50) -> List[str]:
     if not text:
         return []
     words = text.split()
     if len(words) <= chunk_size:
         return [text] if len(text.strip()) >= MIN_CHUNK_CHARS else []
-    chunks = []
+
+    chunks: List[str] = []
     step = chunk_size - overlap
-    for i in range(0, len(words), step):
-        chunk = " ".join(words[i:i+chunk_size])
+    for start in range(0, len(words), step):
+        chunk = " ".join(words[start : start + chunk_size])
         if len(chunk.strip()) >= MIN_CHUNK_CHARS:
             chunks.append(chunk)
-        if i + chunk_size >= len(words):
+        if start + chunk_size >= len(words):
             break
     return chunks
 
 
-# ----------------------------------------------------------------------
-# Build corpus
-# ----------------------------------------------------------------------
 def _build_corpus(data_dir: str = "test_files") -> None:
     global _CORPUS, _GLOSSARY, _BM25, _EMBEDDINGS, _EMBEDDER
     if _CORPUS:
@@ -227,8 +236,8 @@ def _build_corpus(data_dir: str = "test_files") -> None:
         else:
             data_path = Path(__file__).resolve().parent
 
-    all_chunks = []
-    glossary_global = {}
+    all_chunks: List[Dict[str, Any]] = []
+    glossary_global: Dict[str, str] = {}
     chunk_id = 0
 
     for file_path in data_path.glob("*"):
@@ -239,32 +248,41 @@ def _build_corpus(data_dir: str = "test_files") -> None:
             glossary_global.update(file_glossary)
         if not text:
             continue
-        chunks = _chunk_text(text)
-        for chunk in chunks:
-            all_chunks.append({
-                "id": chunk_id,
-                "text": chunk,
-                "source": file_path.name,
-            })
+        for chunk in _chunk_text(text):
+            all_chunks.append(
+                {
+                    "id": chunk_id,
+                    "text": chunk,
+                    "source": file_path.name,
+                }
+            )
             chunk_id += 1
+
+    if not all_chunks:
+        raise RuntimeError(f"No documents loaded from {data_path}")
 
     _CORPUS = all_chunks
     _GLOSSARY = glossary_global
 
-    print(f"[INFO] Loaded glossary with {len(_GLOSSARY)} entries. Sample: {list(_GLOSSARY.keys())[:5]}")
+    logger.info("Loaded glossary with %s entries", len(_GLOSSARY))
+    if not _GLOSSARY:
+        logger.warning("Glossary is empty; narrow variable lookup will be degraded")
 
-    if BM25Okapi is not None and _CORPUS:
+    if BM25Okapi is not None:
         tokenized = [doc["text"].lower().split() for doc in _CORPUS]
         _BM25 = BM25Okapi(tokenized)
-    if SentenceTransformer is not None and _CORPUS:
-        _EMBEDDER = SentenceTransformer("all-MiniLM-L6-v2")
-        texts = [doc["text"] for doc in _CORPUS]
-        _EMBEDDINGS = _EMBEDDER.encode(texts, show_progress_bar=False)
+
+    if SentenceTransformer is not None:
+        try:
+            _EMBEDDER = SentenceTransformer("all-MiniLM-L6-v2")
+            texts = [doc["text"] for doc in _CORPUS]
+            _EMBEDDINGS = _EMBEDDER.encode(texts, show_progress_bar=False)
+        except Exception as exc:
+            logger.warning("Dense embedder unavailable, continuing with BM25 only: %s", exc)
+            _EMBEDDER = None
+            _EMBEDDINGS = None
 
 
-# ----------------------------------------------------------------------
-# Retrieval functions
-# ----------------------------------------------------------------------
 def _dense_retrieve(query: str, top_k: int = 20) -> List[Tuple[int, float]]:
     if _EMBEDDINGS is None or _EMBEDDER is None or not _CORPUS:
         return []
@@ -277,42 +295,41 @@ def _dense_retrieve(query: str, top_k: int = 20) -> List[Tuple[int, float]]:
     top = np.argsort(sim)[-top_k:][::-1]
     return [(int(idx), float(sim[idx])) for idx in top]
 
+
 def _bm25_retrieve(query: str, top_k: int = 20) -> List[Tuple[int, float]]:
     if _BM25 is None or not _CORPUS:
         return []
-    tokens = query.lower().split()
-    scores = _BM25.get_scores(tokens)
+    scores = _BM25.get_scores(query.lower().split())
     top = np.argsort(scores)[-top_k:][::-1]
     return [(int(idx), float(scores[idx])) for idx in top]
 
-def _apply_boosts(query: str, 
-                  bm25_results: List[Tuple[int, float]], 
-                  dense_results: List[Tuple[int, float]]) -> Tuple[List[Tuple[int, float]], List[Tuple[int, float]]]:
-    """
-    Apply source-specific boosts based on query content.
-    - Email boost: if query contains email-related terms, multiply .eml scores by 1.5
-    - Glossary downweight: for non-variable queries, multiply glossary chunks by 0.5
-    """
+
+def _apply_boosts(
+    query: str,
+    bm25_results: List[Tuple[int, float]],
+    dense_results: List[Tuple[int, float]],
+) -> Tuple[List[Tuple[int, float]], List[Tuple[int, float]]]:
     query_lower = query.lower()
-    email_keywords = ["email", "sent", "sender", "who sent", "from:", "subject:"]
-    is_email_query = any(kw in query_lower for kw in email_keywords)
-    
-    has_variable_pattern = bool(re.search(r"\b[a-z]+_[a-z_]+\b", query_lower))
-    is_broad_query = not has_variable_pattern
-    
-    def boost_list(results):
-        new_results = []
+    is_email_query = any(
+        keyword in query_lower
+        for keyword in ["email", "sent", "sender", "who sent", "from:", "subject:"]
+    )
+    is_broad_query = not _is_narrow_query(query)
+
+    def boost_list(results: List[Tuple[int, float]]) -> List[Tuple[int, float]]:
+        boosted: List[Tuple[int, float]] = []
         for doc_id, score in results:
             source = _CORPUS[doc_id]["source"]
             if is_email_query and source.endswith(".eml"):
                 score *= 1.5
             if is_broad_query and source == "glossary_partial.json":
                 score *= 0.5
-            new_results.append((doc_id, score))
-        new_results.sort(key=lambda x: x[1], reverse=True)
-        return new_results
-    
+            boosted.append((doc_id, score))
+        boosted.sort(key=lambda item: item[1], reverse=True)
+        return boosted
+
     return boost_list(bm25_results), boost_list(dense_results)
+
 
 def _is_narrow_query(query: str) -> bool:
     query_lower = query.lower()
@@ -320,184 +337,169 @@ def _is_narrow_query(query: str) -> bool:
         return True
     if re.search(r"\b[a-z]+_[a-z0-9_]{4,}\b", query_lower):
         return True
-    return bool(re.search(r"(?:what does|define|meaning of|measure|scale|represent)\s+`?[a-z_]+`?", query_lower))
+    if re.search(r"(?:what does|define|meaning of|measure|scale|represent)\s+[`'\"]?[^?.!,]+", query_lower):
+        return True
+    return bool(re.search(r"[`'\"][a-z0-9_ ][^`'\"]*[`'\"]", query_lower))
+
 
 def _rrf_fusion(lists: List[List[Tuple[int, float]]], k: int = 60) -> List[Tuple[int, float]]:
-    rrf = {}
-    for lst in lists:
-        for rank, (doc_id, _) in enumerate(lst):
-            rrf[doc_id] = rrf.get(doc_id, 0) + 1.0 / (k + rank + 1)
-    return sorted(rrf.items(), key=lambda x: x[1], reverse=True)
+    fused: Dict[int, float] = {}
+    for results in lists:
+        for rank, (doc_id, _) in enumerate(results):
+            fused[doc_id] = fused.get(doc_id, 0.0) + 1.0 / (k + rank + 1)
+    return sorted(fused.items(), key=lambda item: item[1], reverse=True)
 
 
-# ----------------------------------------------------------------------
-# Glossary lookup (improved with prefix stripping)
-# ----------------------------------------------------------------------
-def _try_glossary_lookup(query: str) -> Optional[List[Dict]]:
-    if not _GLOSSARY or not _is_narrow_query(query):
-        return None
-
+def _candidate_terms_from_query(query: str) -> List[str]:
     query_lower = query.lower()
     candidates: List[str] = []
 
-    matches = re.findall(r"`([a-z0-9_]+)`", query_lower)
-    candidates.extend(matches)
-    words = re.findall(r"\b[a-z][a-z0-9_]{3,}\b", query_lower)
-    for word in words:
-        if "_" in word and len(word) <= 50:
-            candidates.append(word)
-    measure_match = re.search(r"(?:what does|define|meaning of)\s+`?([a-z_]+)`?", query_lower)
-    if measure_match:
-        candidates.append(measure_match.group(1))
+    for match in re.findall(r"[`'\"]([^`'\"]+)[`'\"]", query_lower):
+        cleaned = match.strip()
+        if cleaned:
+            candidates.append(cleaned)
 
-    normalized_candidates: List[str] = []
+    for match in re.findall(r"\b[a-z][a-z0-9_]{3,}\b", query_lower):
+        if "_" in match:
+            candidates.append(match)
+
+    phrase_match = re.search(
+        r"(?:what does|define|meaning of|measure|scale|represent)\s+[`'\"]?([^?.!,]+)",
+        query_lower,
+    )
+    if phrase_match:
+        cleaned = phrase_match.group(1).strip(" `\"'")
+        if cleaned:
+            candidates.append(cleaned)
+
     seen = set()
+    unique_candidates: List[str] = []
     for candidate in candidates:
-        variants = [
-            candidate.strip().lower(),
-            _normalize_glossary_key(candidate),
-        ]
-        for prefix in ["frm_", "var_", "q_"]:
-            if candidate.startswith(prefix):
-                stripped = candidate[len(prefix):]
-                variants.append(stripped)
-                variants.append(_normalize_glossary_key(stripped))
-        for variant in variants:
-            if variant and variant not in seen:
-                normalized_candidates.append(variant)
-                seen.add(variant)
+        normalized = re.sub(r"\s+", " ", candidate.strip())
+        if normalized and normalized not in seen:
+            unique_candidates.append(normalized)
+            seen.add(normalized)
+    return unique_candidates
 
-    if not normalized_candidates:
+
+def _try_glossary_lookup(query: str) -> Optional[List[Dict[str, Any]]]:
+    if not _GLOSSARY or not _is_narrow_query(query):
         return None
 
+    candidates = _candidate_terms_from_query(query)
     if not candidates:
-        fallback_tokens = re.findall(r"\b[a-z][a-z0-9_]{4,}\b", query_lower)
-        for token in fallback_tokens:
-            normalized = _normalize_glossary_key(token)
-            if normalized and normalized not in seen:
-                normalized_candidates.append(normalized)
-                seen.add(normalized)
+        return None
 
     best_match = None
     best_score = -1
-    for cand in normalized_candidates:
-        cand_normalized = _normalize_glossary_key(cand)
-        stripped_variants = []
-        for prefix in ["frm_", "var_", "q_"]:
-            if cand.startswith(prefix):
-                stripped = cand[len(prefix):]
+
+    for candidate in candidates:
+        raw_candidate = candidate.lower()
+        normalized_candidate = _normalize_glossary_key(candidate)
+        stripped_variants = [raw_candidate, normalized_candidate]
+
+        for prefix in PREFIXES:
+            if raw_candidate.startswith(prefix):
+                stripped = raw_candidate[len(prefix) :]
                 stripped_variants.extend([stripped, _normalize_glossary_key(stripped)])
 
-        if cand in _GLOSSARY:
-            definition = _GLOSSARY[cand]
-            if not _is_placeholder_definition(cand, definition):
-                return [{
-                    "text": f"Variable '{cand}' measures: {definition}",
-                    "source": "glossary",
-                    "score": 1.0
-                }]
-
-        for key, desc in _GLOSSARY.items():
+        for key, description in _GLOSSARY.items():
             key_normalized = _normalize_glossary_key(key)
             score = -1
-            if cand_normalized == key_normalized:
+
+            if raw_candidate == key or normalized_candidate == key_normalized:
                 score = 300
-            elif cand == key:
-                score = 290
             elif any(variant and (key == variant or key_normalized == variant) for variant in stripped_variants):
-                score = 260
-            elif any(variant and (key.endswith(f"_{variant}") or key_normalized.endswith(f" {variant}")) for variant in stripped_variants):
-                score = 250
+                score = 275
+            elif any(
+                variant and (key.endswith(f"_{variant}") or key_normalized.endswith(f" {variant}"))
+                for variant in stripped_variants
+            ):
+                score = 245
             elif any(variant and variant in key_normalized for variant in stripped_variants):
-                score = 225
-            elif cand_normalized in key_normalized or key_normalized in cand_normalized:
+                score = 215
+            elif normalized_candidate in key_normalized or key_normalized in normalized_candidate:
                 score = 200
 
             if score < 0:
                 continue
-            is_placeholder = _is_placeholder_definition(key, desc)
-            if is_placeholder:
+
+            if _is_placeholder_definition(key, description):
                 score -= 120
             else:
                 score += 15
-            score += min(len(desc.strip()) // 40, 10)
+            score += min(len(description.strip()) // 40, 10)
+
             if score > best_score:
                 best_score = score
-                best_match = (key, desc, cand, score)
+                best_match = (key, description, candidate, score)
 
-    if best_match is not None:
-        key, desc, cand, score = best_match
-        exactish = score >= 300 or _normalize_glossary_key(key) == _normalize_glossary_key(cand)
-        confidence = 1.0 if exactish else 0.95
-        if exactish:
-            text = f"Variable '{key}' measures: {desc}"
-        else:
-            text = f"Variable '{key}' (close match to '{cand}'): {desc}"
-        return [{
-            "text": text,
-            "source": "glossary",
-            "score": confidence
-        }]
-    return None
+    if best_match is None:
+        return None
+
+    key, description, candidate, score = best_match
+    exactish = score >= 300 or _normalize_glossary_key(key) == _normalize_glossary_key(candidate)
+    confidence = 1.0 if exactish else 0.95
+    if exactish:
+        text = f"Variable '{key}' measures: {description}"
+    else:
+        text = f"Variable '{key}' (close match to '{candidate}'): {description}"
+    return [{"text": text, "source": "glossary", "score": confidence}]
 
 
-# ----------------------------------------------------------------------
-# Main retrieve
-# ----------------------------------------------------------------------
-def retrieve(query: str) -> List[Dict]:
+def retrieve(query: str) -> List[Dict[str, Any]]:
     _build_corpus()
 
     glossary_result = _try_glossary_lookup(query)
     if glossary_result:
-        # Get hybrid results and prepend glossary hit
-        bm25_res = _bm25_retrieve(query, top_k=20)
-        dense_res = _dense_retrieve(query, top_k=20)
-
-        if bm25_res or dense_res:
-            bm25_boosted, dense_boosted = _apply_boosts(query, bm25_res, dense_res)
+        bm25_results = _bm25_retrieve(query, top_k=20)
+        dense_results = _dense_retrieve(query, top_k=20)
+        if bm25_results or dense_results:
+            bm25_boosted, dense_boosted = _apply_boosts(query, bm25_results, dense_results)
             fused = _rrf_fusion([bm25_boosted, dense_boosted])
             if fused:
                 max_score = fused[0][1]
                 min_score = fused[-1][1] if len(fused) > 1 else max_score
                 if max_score == min_score:
-                    norm = [1.0] * len(fused)
+                    norm_scores = [1.0] * len(fused)
                 else:
-                    norm = [(s - min_score) / (max_score - min_score) for _, s in fused]
+                    norm_scores = [(score - min_score) / (max_score - min_score) for _, score in fused]
 
-                remaining = []
-                for i, (doc_id, _) in enumerate(fused[:4]):
+                remaining: List[Dict[str, Any]] = []
+                for index, (doc_id, _) in enumerate(fused[:4]):
                     chunk = _CORPUS[doc_id]
-                    remaining.append({
-                        "text": chunk["text"],
-                        "source": chunk["source"],
-                        "score": norm[i]
-                    })
+                    remaining.append(
+                        {
+                            "text": chunk["text"],
+                            "source": chunk["source"],
+                            "score": norm_scores[index],
+                        }
+                    )
                 return glossary_result + remaining
-        # Fallback if no hybrid results
         return glossary_result
 
-    bm25_res = _bm25_retrieve(query, top_k=20)
-    dense_res = _dense_retrieve(query, top_k=20)
+    bm25_results = _bm25_retrieve(query, top_k=20)
+    dense_results = _dense_retrieve(query, top_k=20)
 
-    if not bm25_res and not dense_res:
-        terms = set(query.lower().split())
-        candidates = []
+    if not bm25_results and not dense_results:
+        query_terms = set(query.lower().split())
+        fallback: List[Tuple[int, float]] = []
         for idx, chunk in enumerate(_CORPUS):
             text_lower = chunk["text"].lower()
-            score = sum(1 for t in terms if t in text_lower) / (len(terms) + 1e-6)
+            score = sum(1 for term in query_terms if term in text_lower) / (len(query_terms) + 1e-6)
             if score > 0:
-                candidates.append((idx, score))
-        candidates.sort(key=lambda x: x[1], reverse=True)
-        results = []
-        for idx, score in candidates[:5]:
-            results.append({
+                fallback.append((idx, score))
+        fallback.sort(key=lambda item: item[1], reverse=True)
+        return [
+            {
                 "text": _CORPUS[idx]["text"],
                 "source": _CORPUS[idx]["source"],
-                "score": score
-            })
-        return results
+                "score": score,
+            }
+            for idx, score in fallback[:5]
+        ]
 
-    bm25_boosted, dense_boosted = _apply_boosts(query, bm25_res, dense_res)
+    bm25_boosted, dense_boosted = _apply_boosts(query, bm25_results, dense_results)
     fused = _rrf_fusion([bm25_boosted, dense_boosted])
     if not fused:
         return []
@@ -505,16 +507,15 @@ def retrieve(query: str) -> List[Dict]:
     max_score = fused[0][1]
     min_score = fused[-1][1] if len(fused) > 1 else max_score
     if max_score == min_score:
-        norm = [1.0] * len(fused)
+        norm_scores = [1.0] * len(fused)
     else:
-        norm = [(s - min_score) / (max_score - min_score) for _, s in fused]
+        norm_scores = [(score - min_score) / (max_score - min_score) for _, score in fused]
 
-    results = []
-    for i, (doc_id, _) in enumerate(fused[:5]):
-        chunk = _CORPUS[doc_id]
-        results.append({
-            "text": chunk["text"],
-            "source": chunk["source"],
-            "score": norm[i]
-        })
-    return results
+    return [
+        {
+            "text": _CORPUS[doc_id]["text"],
+            "source": _CORPUS[doc_id]["source"],
+            "score": norm_scores[index],
+        }
+        for index, (doc_id, _) in enumerate(fused[:5])
+    ]
