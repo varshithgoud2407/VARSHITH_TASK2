@@ -118,39 +118,48 @@ def _extract_from_eml(path: Path) -> Tuple[str, Dict]:
 def _extract_from_json_glossary(path: Path) -> Tuple[str, Dict[str, str]]:
     glossary = {}
     full_text = ""
-    try:
-        with open(path, "r", encoding="utf-8") as f:
-            data = json.load(f)
 
-        def extract(obj, parent_key=""):
-            if isinstance(obj, dict):
-                if "definition" in obj and parent_key and isinstance(parent_key, str):
-                    var_name = parent_key.lower()
-                    desc = obj.get("definition") or obj.get("description") or obj.get("text")
-                    if desc:
-                        glossary[var_name] = str(desc)
-                        nonlocal full_text
-                        full_text += f"{var_name}: {desc}\n"
-                        return
-                for k, v in obj.items():
-                    if isinstance(v, str) and len(v) > 10:
-                        glossary[k.lower()] = v
-                        full_text += f"{k}: {v}\n"
-                    else:
-                        extract(v, parent_key=k)
-            elif isinstance(obj, list):
-                for idx, item in enumerate(obj):
-                    extract(item, parent_key=f"{parent_key}[{idx}]")
+    # Try UTF-8 first, then fallback to latin-1 (never fails)
+    encodings = ['utf-8', 'latin-1']
+    data = None
+    for enc in encodings:
+        try:
+            with open(path, "r", encoding=enc) as f:
+                data = json.load(f)
+            break
+        except (UnicodeDecodeError, json.JSONDecodeError):
+            continue
+    if data is None:
+        print(f"Warning: could not decode {path} with utf-8 or latin-1")
+        return full_text, glossary
 
-        extract(data)
-
-        if not glossary and isinstance(data, dict):
-            for k, v in data.items():
-                if isinstance(v, str):
+    def extract(obj, parent_key=""):
+        if isinstance(obj, dict):
+            if "definition" in obj and parent_key and isinstance(parent_key, str):
+                var_name = parent_key.lower()
+                desc = obj.get("definition") or obj.get("description") or obj.get("text")
+                if desc:
+                    glossary[var_name] = str(desc)
+                    nonlocal full_text
+                    full_text += f"{var_name}: {desc}\n"
+                    return
+            for k, v in obj.items():
+                if isinstance(v, str) and len(v) > 10:
                     glossary[k.lower()] = v
                     full_text += f"{k}: {v}\n"
-    except Exception as e:
-        print(f"Warning: failed to parse glossary {path}: {e}")
+                else:
+                    extract(v, parent_key=k)
+        elif isinstance(obj, list):
+            for idx, item in enumerate(obj):
+                extract(item, parent_key=f"{parent_key}[{idx}]")
+
+    extract(data)
+
+    if not glossary and isinstance(data, dict):
+        for k, v in data.items():
+            if isinstance(v, str):
+                glossary[k.lower()] = v
+                full_text += f"{k}: {v}\n"
     return full_text, glossary
 
 def _extract_text_from_file(file_path: Path) -> Tuple[str, Dict[str, str]]:
