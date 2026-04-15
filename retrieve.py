@@ -383,7 +383,7 @@ def retrieve(query: str) -> List[Dict]:
         candidates = []
         for idx, chunk in enumerate(_CORPUS):
             text_lower = chunk["text"].lower()
-            score = sum(1 for t in terms of terms if t in text_lower) / (len(terms) + 1e-6)
+            score = sum(1 for t in terms if t in text_lower) / (len(terms) + 1e-6)
             if score > 0:
                 candidates.append((idx, score))
         candidates.sort(key=lambda x: x[1], reverse=True)
